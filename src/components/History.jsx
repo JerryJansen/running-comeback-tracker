@@ -1,9 +1,13 @@
 import { useMemo, useState } from 'react';
 import { formatDate, painColor, calculatePace } from '../utils/helpers';
+import RunLogger from './RunLogger';
+import RehabLogger from './RehabLogger';
+import PainTracker from './PainTracker';
 
 export default function History({ data }) {
   const [filter, setFilter] = useState('all');
   const [expandedId, setExpandedId] = useState(null);
+  const [editing, setEditing] = useState(null); // { type, item }
 
   const items = useMemo(() => {
     let all = [];
@@ -25,6 +29,24 @@ export default function History({ data }) {
     else if (item._type === 'rehab') await data.deleteRehab(item.id);
     else await data.deletePain(item.id);
   };
+
+  const handleEdit = (item) => {
+    const cleanItem = { ...item };
+    delete cleanItem._type;
+    setEditing({ type: item._type, item: cleanItem });
+  };
+
+  if (editing) {
+    if (editing.type === 'run') {
+      return <RunLogger data={data} onBack={() => setEditing(null)} editRun={editing.item} />;
+    }
+    if (editing.type === 'rehab') {
+      return <RehabLogger data={data} onBack={() => setEditing(null)} editSession={editing.item} />;
+    }
+    if (editing.type === 'pain') {
+      return <PainTracker data={data} onBack={() => setEditing(null)} editEntry={editing.item} />;
+    }
+  }
 
   return (
     <div className="history">
@@ -57,6 +79,9 @@ export default function History({ data }) {
             {item._type === 'run' && (
               <div className="history-summary">
                 {item.distance} km · {item.duration} min · {calculatePace(item.distance, item.duration)} · {item.type}
+                {item.type === 'walk-run' && item.walkRunRepeats && (
+                  <span className="text-muted"> ({item.walkRunRepeats}× {item.walkRunMin}/{item.walkRunWalkMin} min)</span>
+                )}
               </div>
             )}
             {item._type === 'rehab' && (
@@ -77,8 +102,10 @@ export default function History({ data }) {
                     <p>Surface: {item.surface}</p>
                     <p>Pain during: <span style={{ color: painColor(item.painDuring) }}>{item.painDuring}/10</span></p>
                     <p>Pain after: <span style={{ color: painColor(item.painAfter) }}>{item.painAfter}/10</span></p>
-                    {item.painNextMorning !== null && (
+                    {item.painNextMorning !== null ? (
                       <p>Pain next morning: <span style={{ color: painColor(item.painNextMorning) }}>{item.painNextMorning}/10</span></p>
+                    ) : (
+                      <p className="text-muted">Next-morning pain: not yet filled in</p>
                     )}
                     {item.notes && <p className="history-notes">{item.notes}</p>}
                   </>
@@ -103,9 +130,14 @@ export default function History({ data }) {
                 {item._type === 'pain' && item.notes && (
                   <p className="history-notes">{item.notes}</p>
                 )}
-                <button className="btn btn--ghost btn--sm text-red" onClick={(e) => { e.stopPropagation(); handleDelete(item); }}>
-                  Delete
-                </button>
+                <div className="history-actions">
+                  <button className="btn btn--secondary btn--sm" onClick={(e) => { e.stopPropagation(); handleEdit(item); }}>
+                    Edit
+                  </button>
+                  <button className="btn btn--ghost btn--sm text-red" onClick={(e) => { e.stopPropagation(); handleDelete(item); }}>
+                    Delete
+                  </button>
+                </div>
               </div>
             )}
           </div>

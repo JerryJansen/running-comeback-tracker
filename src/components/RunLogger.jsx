@@ -6,6 +6,7 @@ const RUN_TYPES = ['easy', 'intervals', 'walk-run', 'tempo'];
 const SURFACES = ['treadmill', 'road', 'trail', 'track'];
 
 export default function RunLogger({ data, onBack, editRun }) {
+  const isEdit = !!editRun;
   const [form, setForm] = useState(editRun || {
     distance: '',
     duration: '',
@@ -16,6 +17,10 @@ export default function RunLogger({ data, onBack, editRun }) {
     painNextMorning: null,
     notes: '',
     date: today(),
+    // Walk-run interval fields
+    walkRunMin: 1,
+    walkRunWalkMin: 2,
+    walkRunRepeats: 5,
   });
 
   const pace = calculatePace(parseFloat(form.distance), parseFloat(form.duration));
@@ -39,7 +44,7 @@ export default function RunLogger({ data, onBack, editRun }) {
     <div className="logger">
       <div className="logger-header">
         <button className="btn btn--ghost" onClick={onBack}>← Back</button>
-        <h2>Log Run</h2>
+        <h2>{isEdit ? 'Edit Run' : 'Log Run'}</h2>
       </div>
 
       <div className="form-group">
@@ -96,6 +101,50 @@ export default function RunLogger({ data, onBack, editRun }) {
           ))}
         </div>
       </div>
+
+      {/* Walk-run interval structure */}
+      {form.type === 'walk-run' && (
+        <div className="card interval-card">
+          <h4>Interval Structure</h4>
+          <div className="interval-fields">
+            <div className="form-group form-group--inline">
+              <label>Run</label>
+              <input
+                type="number"
+                value={form.walkRunMin || 1}
+                onChange={(e) => update('walkRunMin', parseFloat(e.target.value) || 0)}
+                min="0.5"
+                step="0.5"
+              />
+              <span className="text-muted">min</span>
+            </div>
+            <div className="form-group form-group--inline">
+              <label>Walk</label>
+              <input
+                type="number"
+                value={form.walkRunWalkMin || 2}
+                onChange={(e) => update('walkRunWalkMin', parseFloat(e.target.value) || 0)}
+                min="0.5"
+                step="0.5"
+              />
+              <span className="text-muted">min</span>
+            </div>
+            <div className="form-group form-group--inline">
+              <label>Repeats</label>
+              <input
+                type="number"
+                value={form.walkRunRepeats || 5}
+                onChange={(e) => update('walkRunRepeats', parseInt(e.target.value) || 0)}
+                min="1"
+              />
+              <span className="text-muted">×</span>
+            </div>
+          </div>
+          <div className="text-muted" style={{ fontSize: 12, marginTop: 4 }}>
+            {form.walkRunRepeats || 0}× ({form.walkRunMin || 0} min run / {form.walkRunWalkMin || 0} min walk) = {((form.walkRunMin || 0) + (form.walkRunWalkMin || 0)) * (form.walkRunRepeats || 0)} min total
+          </div>
+        </div>
+      )}
 
       <div className="form-group">
         <label>Surface</label>
@@ -175,7 +224,7 @@ export default function RunLogger({ data, onBack, editRun }) {
       </div>
 
       <button className="btn btn--primary btn--full" onClick={handleSave}>
-        Save Run
+        {isEdit ? 'Update Run' : 'Save Run'}
       </button>
     </div>
   );

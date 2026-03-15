@@ -8,6 +8,8 @@ export default function Settings({ data }) {
   );
   const [saved, setSaved] = useState(false);
   const [importStatus, setImportStatus] = useState('');
+  const [weekOverrideOpen, setWeekOverrideOpen] = useState(null);
+  const [weekExForm, setWeekExForm] = useState({});
 
   const addExercise = () => {
     setExercises((prev) => [...prev, { name: '', sets: 3, reps: 10 }]);
@@ -30,6 +32,46 @@ export default function Settings({ data }) {
     await data.saveExercises(exercises.filter((e) => e.name.trim()));
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  };
+
+  // Per-week exercise overrides
+  const openWeekOverride = (week) => {
+    const existing = data.weekExercises[week] || exercises.filter((e) => e.name.trim());
+    setWeekExForm({ [week]: existing.length > 0 ? [...existing] : [{ name: '', sets: 3, reps: 10 }] });
+    setWeekOverrideOpen(week);
+  };
+
+  const updateWeekEx = (week, idx, field, value) => {
+    setWeekExForm((prev) => {
+      const list = [...(prev[week] || [])];
+      list[idx] = { ...list[idx], [field]: value };
+      return { ...prev, [week]: list };
+    });
+  };
+
+  const addWeekEx = (week) => {
+    setWeekExForm((prev) => ({
+      ...prev,
+      [week]: [...(prev[week] || []), { name: '', sets: 3, reps: 10 }],
+    }));
+  };
+
+  const removeWeekEx = (week, idx) => {
+    setWeekExForm((prev) => ({
+      ...prev,
+      [week]: (prev[week] || []).filter((_, i) => i !== idx),
+    }));
+  };
+
+  const saveWeekOverride = async (week) => {
+    const list = (weekExForm[week] || []).filter((e) => e.name.trim());
+    await data.saveWeekExercises(week, list);
+    setWeekOverrideOpen(null);
+  };
+
+  const clearWeekOverride = async (week) => {
+    await data.saveWeekExercises(week, []);
+    setWeekOverrideOpen(null);
   };
 
   const handleExport = async () => {
@@ -86,8 +128,8 @@ export default function Settings({ data }) {
       </div>
 
       <div className="card">
-        <h3>Rehab Exercises</h3>
-        <p className="text-muted">Configure your rehab exercise list.</p>
+        <h3>Default Rehab Exercises</h3>
+        <p className="text-muted">Used unless a week has custom exercises below.</p>
         {exercises.map((ex, idx) => (
           <div key={idx} className="exercise-config">
             <input
@@ -123,6 +165,63 @@ export default function Settings({ data }) {
       <button className="btn btn--primary btn--full" onClick={handleSave}>
         {saved ? '✓ Saved!' : 'Save Settings'}
       </button>
+
+      <div className="card">
+        <h3>Per-Week Exercise Progression</h3>
+        <p className="text-muted">Override exercises for specific weeks as rehab progresses.</p>
+        <div className="week-exercise-grid">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((week) => {
+            const hasOverride = data.weekExercises[week] && data.weekExercises[week].length > 0;
+            return (
+              <button
+                key={week}
+                className={`chip ${hasOverride ? 'chip--active' : ''} ${weekOverrideOpen === week ? 'chip--active' : ''}`}
+                onClick={() => weekOverrideOpen === week ? setWeekOverrideOpen(null) : openWeekOverride(week)}
+              >
+                Wk {week} {hasOverride ? '✓' : ''}
+              </button>
+            );
+          })}
+        </div>
+
+        {weekOverrideOpen && (
+          <div className="week-override-editor">
+            <h4>Week {weekOverrideOpen} Exercises</h4>
+            {(weekExForm[weekOverrideOpen] || []).map((ex, idx) => (
+              <div key={idx} className="exercise-config">
+                <input
+                  type="text"
+                  placeholder="Exercise name"
+                  value={ex.name}
+                  onChange={(e) => updateWeekEx(weekOverrideOpen, idx, 'name', e.target.value)}
+                  className="exercise-name-input"
+                />
+                <div className="exercise-config-nums">
+                  <input
+                    type="number"
+                    value={ex.sets}
+                    onChange={(e) => updateWeekEx(weekOverrideOpen, idx, 'sets', parseInt(e.target.value) || 0)}
+                    min="0"
+                  />
+                  <span>×</span>
+                  <input
+                    type="number"
+                    value={ex.reps}
+                    onChange={(e) => updateWeekEx(weekOverrideOpen, idx, 'reps', parseInt(e.target.value) || 0)}
+                    min="0"
+                  />
+                  <button className="btn btn--ghost btn--sm" onClick={() => removeWeekEx(weekOverrideOpen, idx)}>✕</button>
+                </div>
+              </div>
+            ))}
+            <div className="week-override-actions">
+              <button className="btn btn--secondary btn--sm" onClick={() => addWeekEx(weekOverrideOpen)}>+ Add</button>
+              <button className="btn btn--primary btn--sm" onClick={() => saveWeekOverride(weekOverrideOpen)}>Save Week {weekOverrideOpen}</button>
+              <button className="btn btn--ghost btn--sm text-red" onClick={() => clearWeekOverride(weekOverrideOpen)}>Use defaults</button>
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className="card">
         <h3>Notifications</h3>

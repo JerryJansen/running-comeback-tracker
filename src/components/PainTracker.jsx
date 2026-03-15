@@ -4,8 +4,9 @@ import { today, generateId, painColor } from '../utils/helpers';
 const CONTEXTS = ['morning stiffness', 'during activity', 'after activity', 'stairs', 'sitting'];
 const KNEES = ['left', 'right', 'both'];
 
-export default function PainTracker({ data, onBack }) {
-  const [form, setForm] = useState({
+export default function PainTracker({ data, onBack, editEntry }) {
+  const isEdit = !!editEntry;
+  const [form, setForm] = useState(editEntry || {
     date: today(),
     level: 3,
     context: 'morning stiffness',
@@ -18,7 +19,7 @@ export default function PainTracker({ data, onBack }) {
   const handleSave = async () => {
     const entry = {
       ...form,
-      id: generateId(),
+      id: editEntry?.id || generateId(),
     };
     await data.savePain(entry);
     onBack();
@@ -28,7 +29,7 @@ export default function PainTracker({ data, onBack }) {
     <div className="logger">
       <div className="logger-header">
         <button className="btn btn--ghost" onClick={onBack}>← Back</button>
-        <h2>Log Pain</h2>
+        <h2>{isEdit ? 'Edit Pain Entry' : 'Log Pain'}</h2>
       </div>
 
       <div className="form-group">
@@ -93,7 +94,7 @@ export default function PainTracker({ data, onBack }) {
       </div>
 
       <button className="btn btn--primary btn--full" onClick={handleSave}>
-        Save Pain Entry
+        {isEdit ? 'Update Pain Entry' : 'Save Pain Entry'}
       </button>
     </div>
   );

@@ -685,6 +685,122 @@ input[type="range"]::-webkit-slider-thumb {
 .file-upload-btn { cursor: pointer; }
 .import-status { margin-top: 8px; font-size: 13px; color: var(--green); }
 
+/* History edit/delete actions */
+.history-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* Morning pain follow-up card */
+.morning-pain-card {
+  border: 1px solid var(--amber);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.morning-pain-entry {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.morning-pain-entry:last-child { border-bottom: none; }
+
+.morning-pain-run {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.morning-pain-saved {
+  padding: 8px 0;
+  color: var(--green);
+  font-size: 13px;
+}
+
+/* Edit hint on activity chips */
+.edit-hint {
+  display: block;
+  font-size: 10px;
+  color: var(--text-muted);
+  opacity: 0.6;
+  margin-top: 2px;
+}
+
+.activity-chip { cursor: pointer; transition: background 0.2s; }
+.activity-chip:active { background: var(--bg-input); }
+
+/* Rest day button */
+.btn--rest {
+  background: var(--bg-card);
+  color: var(--text-muted);
+  border: 1px dashed var(--border);
+  margin-top: 4px;
+}
+
+.btn--rest:active { background: var(--bg-input); }
+
+.btn--rest-active {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--green);
+  border: 1px solid var(--green);
+  margin-top: 4px;
+}
+
+.activity-chip--rest {
+  border-left-color: var(--blue);
+  font-style: italic;
+}
+
+/* Alert variants */
+.alert--warning {
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--amber);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.alert--success {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--green);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+/* Walk-run interval card */
+.interval-card {
+  background: rgba(34, 211, 238, 0.06);
+  border: 1px solid rgba(34, 211, 238, 0.15);
+}
+
+.interval-fields {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.interval-fields input { width: 60px; }
+
+/* Per-week exercise grid */
+.week-exercise-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.week-override-editor {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.week-override-editor h4 { margin-bottom: 8px; }
+
+.week-override-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
 /* Desktop overrides */
 @media (min-width: 768px) {
   .app { max-width: 480px; border-left: 1px solid var(--border); border-right: 1px solid var(--border); }

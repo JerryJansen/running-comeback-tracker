@@ -5,25 +5,31 @@ export function useData() {
   const [runs, setRuns] = useState([]);
   const [rehab, setRehab] = useState([]);
   const [pain, setPain] = useState([]);
+  const [restDays, setRestDays] = useState([]);
   const [programStart, setProgramStart] = useState(null);
   const [exercises, setExercises] = useState([]);
+  const [weekExercises, setWeekExercises] = useState({});
   const [weeklyPlan, setWeeklyPlan] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    const [r, rh, p, ps, ex, wp] = await Promise.all([
+    const [r, rh, p, rd, ps, ex, wex, wp] = await Promise.all([
       db.getAll('runs'),
       db.getAll('rehab'),
       db.getAll('pain'),
+      db.getSetting('restDays'),
       db.getSetting('programStart'),
       db.getSetting('exercises'),
+      db.getSetting('weekExercises'),
       db.getSetting('weeklyPlan'),
     ]);
     setRuns(r);
     setRehab(rh);
     setPain(p);
+    setRestDays(rd || []);
     setProgramStart(ps || null);
     setExercises(ex || []);
+    setWeekExercises(wex || {});
     setWeeklyPlan(wp || defaultWeeklyPlan());
     setLoading(false);
   }, []);
@@ -77,10 +83,36 @@ export function useData() {
     setWeeklyPlan(plan);
   };
 
+  const saveRestDay = async (date) => {
+    const updated = [...restDays.filter((d) => d !== date), date];
+    await db.setSetting('restDays', updated);
+    setRestDays(updated);
+  };
+
+  const removeRestDay = async (date) => {
+    const updated = restDays.filter((d) => d !== date);
+    await db.setSetting('restDays', updated);
+    setRestDays(updated);
+  };
+
+  const saveWeekExercises = async (weekNum, exerciseList) => {
+    const updated = { ...weekExercises, [weekNum]: exerciseList };
+    await db.setSetting('weekExercises', updated);
+    setWeekExercises(updated);
+  };
+
+  const getExercisesForWeek = (weekNum) => {
+    if (weekExercises[weekNum] && weekExercises[weekNum].length > 0) {
+      return weekExercises[weekNum];
+    }
+    return exercises;
+  };
+
   return {
-    runs, rehab, pain, programStart, exercises, weeklyPlan, loading,
+    runs, rehab, pain, restDays, programStart, exercises, weekExercises, weeklyPlan, loading,
     saveRun, deleteRun, saveRehab, deleteRehab, savePain, deletePain,
-    saveProgramStart, saveExercises, saveWeeklyPlan, refresh,
+    saveProgramStart, saveExercises, saveWeeklyPlan, saveRestDay, removeRestDay,
+    saveWeekExercises, getExercisesForWeek, refresh,
   };
 }
 

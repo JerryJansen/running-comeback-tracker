@@ -1,14 +1,20 @@
 import { useState } from 'react';
-import { today, generateId, painColor } from '../utils/helpers';
+import { today, generateId, painColor, getCurrentWeek } from '../utils/helpers';
 
-export default function RehabLogger({ data, onBack }) {
-  const exerciseList = data.exercises.length > 0
-    ? data.exercises
+export default function RehabLogger({ data, onBack, editSession }) {
+  const isEdit = !!editSession;
+  const currentWeek = getCurrentWeek(data.programStart);
+  const exerciseList = currentWeek
+    ? data.getExercisesForWeek(currentWeek)
+    : (data.exercises.length > 0 ? data.exercises : []);
+
+  const defaultExercises = exerciseList.length > 0
+    ? exerciseList
     : [{ name: 'Add exercises in Settings', sets: 3, reps: 10 }];
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState(editSession || {
     date: today(),
-    exercises: exerciseList.map((ex) => ({
+    exercises: defaultExercises.map((ex) => ({
       name: ex.name,
       targetSets: ex.sets,
       targetReps: ex.reps,
@@ -42,7 +48,7 @@ export default function RehabLogger({ data, onBack }) {
 
   const handleSave = async () => {
     const session = {
-      id: generateId(),
+      id: editSession?.id || generateId(),
       date: form.date,
       exercises: form.exercises,
       notes: form.notes,
@@ -55,7 +61,7 @@ export default function RehabLogger({ data, onBack }) {
     <div className="logger">
       <div className="logger-header">
         <button className="btn btn--ghost" onClick={onBack}>← Back</button>
-        <h2>Log Rehab Session</h2>
+        <h2>{isEdit ? 'Edit Rehab' : 'Log Rehab Session'}</h2>
       </div>
 
       <div className="form-group">
@@ -63,7 +69,13 @@ export default function RehabLogger({ data, onBack }) {
         <input type="date" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} />
       </div>
 
-      {data.exercises.length === 0 && (
+      {currentWeek && exerciseList.length > 0 && (
+        <div className="text-muted" style={{ fontSize: 12, marginBottom: 8 }}>
+          Using Week {currentWeek} exercises
+        </div>
+      )}
+
+      {data.exercises.length === 0 && !editSession && (
         <div className="alert alert--info">
           No exercises configured yet. Add your exercises in the Settings tab.
         </div>
@@ -152,7 +164,7 @@ export default function RehabLogger({ data, onBack }) {
       </div>
 
       <button className="btn btn--primary btn--full" onClick={handleSave}>
-        Save Rehab Session
+        {isEdit ? 'Update Rehab Session' : 'Save Rehab Session'}
       </button>
     </div>
   );

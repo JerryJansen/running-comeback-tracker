@@ -4,6 +4,12 @@ export function today() {
   return format(new Date(), 'yyyy-MM-dd');
 }
 
+export function yesterday() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return format(d, 'yyyy-MM-dd');
+}
+
 export function formatDate(dateStr) {
   return format(parseISO(dateStr), 'EEE, MMM d');
 }
@@ -52,9 +58,10 @@ export function getWeekDates(dateStr) {
   return eachDayOfInterval({ start, end }).map((d) => format(d, 'yyyy-MM-dd'));
 }
 
-export function getStreakCount(runs, rehab, pain) {
+export function getStreakCount(runs, rehab, pain, restDays = []) {
   const allDates = new Set();
   [...runs, ...rehab, ...pain].forEach((item) => allDates.add(item.date));
+  restDays.forEach((d) => allDates.add(d));
   const sorted = [...allDates].sort().reverse();
 
   let streak = 0;

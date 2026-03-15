@@ -114,6 +114,34 @@ export default function ProgressDashboard({ data }) {
     });
   }, [data.runs, data.rehab, data.pain]);
 
+  // 10% rule: check if current week volume exceeds previous week by >10%
+  const tenPercentWarning = useMemo(() => {
+    const now = new Date();
+    const thisWeekStart = startOfWeek(now, { weekStartsOn: 1 });
+    const lastWeekStart = subWeeks(thisWeekStart, 1);
+    const lastWeekEnd = new Date(thisWeekStart);
+    lastWeekEnd.setDate(lastWeekEnd.getDate() - 1);
+
+    const thisWeekStartStr = format(thisWeekStart, 'yyyy-MM-dd');
+    const nowStr = format(now, 'yyyy-MM-dd');
+    const lastWeekStartStr = format(lastWeekStart, 'yyyy-MM-dd');
+    const lastWeekEndStr = format(lastWeekEnd, 'yyyy-MM-dd');
+
+    const thisWeekKm = data.runs
+      .filter((r) => r.date >= thisWeekStartStr && r.date <= nowStr)
+      .reduce((s, r) => s + r.distance, 0);
+    const lastWeekKm = data.runs
+      .filter((r) => r.date >= lastWeekStartStr && r.date <= lastWeekEndStr)
+      .reduce((s, r) => s + r.distance, 0);
+
+    if (lastWeekKm === 0 || thisWeekKm === 0) return null;
+    const increase = ((thisWeekKm - lastWeekKm) / lastWeekKm) * 100;
+    if (increase > 10) {
+      return { increase: increase.toFixed(0), thisWeekKm: thisWeekKm.toFixed(1), lastWeekKm: lastWeekKm.toFixed(1) };
+    }
+    return null;
+  }, [data.runs]);
+
   // Week plan vs actual
   const weekComparison = useMemo(() => {
     if (!currentWeek || !data.weeklyPlan) return null;
@@ -151,6 +179,12 @@ export default function ProgressDashboard({ data }) {
           <div className="stat-label">Avg pace</div>
         </div>
       </div>
+
+      {tenPercentWarning && (
+        <div className="alert alert--warning">
+          🟡 Volume up {tenPercentWarning.increase}% vs last week ({tenPercentWarning.thisWeekKm} km vs {tenPercentWarning.lastWeekKm} km). The 10% rule suggests limiting weekly increases to avoid re-injury.
+        </div>
+      )}
 
       {weekComparison && (
         <div className="card">
