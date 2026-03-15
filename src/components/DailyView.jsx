@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { today, yesterday, formatDateFull, getCurrentWeek, getStreakCount, painColor } from '../utils/helpers';
-import { getTodaySuggestion, RUNNING_PLAN, PHASE_NAMES, PAIN_RULES, WARMUP, COOLDOWN } from '../utils/pfpsProgram';
+import { getTodaySuggestion, RUNNING_PLAN, PHASE_NAMES, PAIN_RULES, WARMUP, COOLDOWN, CADENCE_ADVICE, WEEKLY_EXERCISES } from '../utils/pfpsProgram';
 import { getWeekSchedule } from '../utils/scheduleTracker';
 import RunLogger from './RunLogger';
 import RehabLogger from './RehabLogger';
@@ -206,35 +206,15 @@ export default function DailyView({ data }) {
           )}
 
           {effectiveActivity === 'run' && suggestion?.runPlan && (
-            <div className="suggestion-detail">
-              <div className="suggestion-run-plan">
-                <strong>{suggestion.runPlan.runMin} min run / {suggestion.runPlan.walkMin} min walk × {suggestion.runPlan.intervals}</strong>
-                <span className="text-muted"> ({suggestion.runPlan.totalMin} min total, ~{suggestion.runPlan.approxKm} km)</span>
-              </div>
-              <p className="text-muted suggestion-note">{suggestion.runPlan.notes}</p>
-              <div className="suggestion-reminder">
-                Pain must stay ≤ 2/10 during running. Stop if it rises above.
-              </div>
-            </div>
+            <RunWorkoutCard runPlan={suggestion.runPlan} weekNum={effectiveWeek} />
           )}
 
           {effectiveActivity === 'rehab' && (
-            <div className="suggestion-detail">
-              <p className="text-muted">{suggestion?.exercises?.length || 0} exercises in today's program</p>
-              <p className="text-muted suggestion-note">{suggestion?.phaseGoal || ''}</p>
-              <div className="suggestion-reminder">
-                Pain must stay ≤ 4/10 during exercises. Ideally below 2/10.
-              </div>
-            </div>
+            <RehabWorkoutCard weekNum={effectiveWeek} phaseGoal={suggestion?.phaseGoal} />
           )}
 
           {effectiveActivity === 'rest' && !isRescheduled && (
-            <div className="suggestion-detail">
-              <p className="text-muted">Recovery is training. Your body rebuilds stronger on rest days.</p>
-              <div className="suggestion-reminder">
-                Optional: gentle stretching, foam rolling, or a short walk.
-              </div>
-            </div>
+            <RestDayCard />
           )}
         </div>
       )}
@@ -364,6 +344,217 @@ function MorningPainEntry({ run, onSave }) {
         />
       </div>
       <button className="btn btn--primary btn--sm" onClick={handleSave}>Save</button>
+    </div>
+  );
+}
+
+// ─── Full Run Workout Card ──────────────────────────────────────
+function RunWorkoutCard({ runPlan, weekNum }) {
+  const [showWarmup, setShowWarmup] = useState(false);
+  const [showCooldown, setShowCooldown] = useState(false);
+
+  return (
+    <div className="workout-card">
+      <div className="suggestion-reminder" style={{ marginBottom: 10 }}>
+        Pain must stay ≤ 2/10 during running. Stop and walk if it rises above.
+      </div>
+
+      {/* Warm-up */}
+      <div className="workout-section">
+        <button className="workout-section-toggle" onClick={() => setShowWarmup(!showWarmup)}>
+          <span className="workout-section-title">Warm-up (~10 min)</span>
+          <span>{showWarmup ? '▾' : '▸'}</span>
+        </button>
+        {showWarmup && (
+          <div className="workout-exercise-list">
+            {WARMUP.map((item, i) => (
+              <div key={i} className="workout-exercise-item">
+                <div className="workout-exercise-name">{item.name}</div>
+                <div className="workout-exercise-meta">
+                  {item.duration || item.reps}
+                  {item.detail && <span className="workout-exercise-detail"> — {item.detail}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Run protocol */}
+      <div className="workout-section workout-section--highlight">
+        <div className="workout-section-title">Run Protocol</div>
+        <div className="workout-run-protocol">
+          <div className="workout-run-summary">
+            <strong>{runPlan.runMin} min run / {runPlan.walkMin} min walk</strong>
+            <span> × {runPlan.intervals} intervals</span>
+          </div>
+          <div className="workout-run-meta">
+            {runPlan.totalMin} min total — ~{runPlan.approxKm} km — {runPlan.sessions} sessions this week
+          </div>
+
+          <div className="workout-run-intervals">
+            {Array.from({ length: runPlan.intervals }, (_, i) => (
+              <div key={i} className="workout-interval">
+                <span className="workout-interval-num">#{i + 1}</span>
+                <span className="workout-interval-run">Run {runPlan.runMin} min</span>
+                {i < runPlan.intervals - 1 && (
+                  <span className="workout-interval-walk">Walk {runPlan.walkMin} min</span>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="workout-run-notes">{runPlan.notes}</div>
+        </div>
+
+        <div className="workout-cadence-tip">
+          <strong>Cadence tip:</strong> {CADENCE_ADVICE.instruction} {CADENCE_ADVICE.reason}
+        </div>
+      </div>
+
+      {/* Cool-down */}
+      <div className="workout-section">
+        <button className="workout-section-toggle" onClick={() => setShowCooldown(!showCooldown)}>
+          <span className="workout-section-title">Cool-down & Stretching (~15 min)</span>
+          <span>{showCooldown ? '▾' : '▸'}</span>
+        </button>
+        {showCooldown && (
+          <div className="workout-exercise-list">
+            {COOLDOWN.map((item, i) => (
+              <div key={i} className="workout-exercise-item">
+                <div className="workout-exercise-name">{item.name}</div>
+                <div className="workout-exercise-meta">
+                  {item.duration || item.hold}
+                  {item.detail && <span className="workout-exercise-detail"> — {item.detail}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Full Rehab Workout Card ────────────────────────────────────
+function RehabWorkoutCard({ weekNum, phaseGoal }) {
+  const exercises = WEEKLY_EXERCISES[weekNum] || [];
+
+  // Group exercises by category
+  const categories = {};
+  for (const ex of exercises) {
+    const cat = ex.category || 'other';
+    if (!categories[cat]) categories[cat] = [];
+    categories[cat].push(ex);
+  }
+
+  const categoryLabels = {
+    hip: 'Hip & Glutes',
+    quad: 'Quadriceps',
+    hamstring: 'Hamstrings',
+    calf: 'Calves',
+    balance: 'Balance & Proprioception',
+    other: 'Other',
+  };
+
+  return (
+    <div className="workout-card">
+      <div className="suggestion-reminder" style={{ marginBottom: 10 }}>
+        Pain must stay ≤ 4/10 during exercises. Ideally below 2/10.
+      </div>
+
+      {phaseGoal && (
+        <div className="workout-phase-goal">
+          <strong>Goal:</strong> {phaseGoal}
+        </div>
+      )}
+
+      {/* Warm-up (collapsed by default) */}
+      <RehabWarmupSection />
+
+      {/* Exercise list by category */}
+      {Object.entries(categories).map(([cat, exList]) => (
+        <div key={cat} className="workout-section">
+          <div className="workout-section-title workout-category-title">
+            {categoryLabels[cat] || cat}
+          </div>
+          <div className="workout-exercise-list">
+            {exList.map((ex, i) => (
+              <div key={i} className="workout-exercise-item workout-exercise-item--detailed">
+                <div className="workout-exercise-header">
+                  <span className="workout-exercise-name">{ex.name}</span>
+                  <span className="workout-exercise-sets">
+                    {ex.sets} × {ex.reps}{ex.reps === 1 ? '' : ''}
+                  </span>
+                </div>
+                {ex.tempo && (
+                  <div className="workout-exercise-tempo">Tempo: {ex.tempo}</div>
+                )}
+                {ex.notes && (
+                  <div className="workout-exercise-notes">{ex.notes}</div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      <div className="workout-total">
+        {exercises.length} exercises — ~{Math.round(exercises.length * 2.5)} min total
+      </div>
+    </div>
+  );
+}
+
+function RehabWarmupSection() {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="workout-section">
+      <button className="workout-section-toggle" onClick={() => setShow(!show)}>
+        <span className="workout-section-title">Warm-up (~10 min)</span>
+        <span>{show ? '▾' : '▸'}</span>
+      </button>
+      {show && (
+        <div className="workout-exercise-list">
+          {WARMUP.map((item, i) => (
+            <div key={i} className="workout-exercise-item">
+              <div className="workout-exercise-name">{item.name}</div>
+              <div className="workout-exercise-meta">
+                {item.duration || item.reps}
+                {item.detail && <span className="workout-exercise-detail"> — {item.detail}</span>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Rest Day Card ──────────────────────────────────────────────
+function RestDayCard() {
+  return (
+    <div className="workout-card">
+      <div className="workout-section">
+        <div className="workout-section-title">Recovery Day</div>
+        <p className="text-muted" style={{ margin: '6px 0' }}>
+          Recovery is training. Your body rebuilds stronger on rest days.
+        </p>
+        <div className="workout-exercise-list">
+          <div className="workout-exercise-item">
+            <div className="workout-exercise-name">Foam rolling</div>
+            <div className="workout-exercise-meta">5-10 min — quads, IT band, hamstrings, calves, glutes</div>
+          </div>
+          <div className="workout-exercise-item">
+            <div className="workout-exercise-name">Gentle stretching</div>
+            <div className="workout-exercise-meta">10 min — focus on quads, hip flexors, hamstrings, calves</div>
+          </div>
+          <div className="workout-exercise-item">
+            <div className="workout-exercise-name">Easy walk (optional)</div>
+            <div className="workout-exercise-meta">15-20 min — flat surface, comfortable pace</div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
