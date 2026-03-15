@@ -4,6 +4,7 @@ import DailyView from './components/DailyView';
 import ProgressDashboard from './components/ProgressDashboard';
 import ProgramPlanner from './components/ProgramPlanner';
 import History from './components/History';
+import PfpsGuide from './components/PfpsGuide';
 import Settings from './components/Settings';
 import './App.css';
 
@@ -11,6 +12,7 @@ const TABS = [
   { id: 'today', label: 'Today', icon: '📅' },
   { id: 'progress', label: 'Progress', icon: '📈' },
   { id: 'plan', label: 'Plan', icon: '🗓' },
+  { id: 'guide', label: 'Guide', icon: '📖' },
   { id: 'history', label: 'History', icon: '📋' },
   { id: 'settings', label: 'Settings', icon: '⚙' },
 ];
@@ -75,6 +77,7 @@ export default function App() {
         {tab === 'today' && <DailyView data={data} />}
         {tab === 'progress' && <ProgressDashboard data={data} />}
         {tab === 'plan' && <ProgramPlanner data={data} />}
+        {tab === 'guide' && <PfpsGuide />}
         {tab === 'history' && <History data={data} />}
         {tab === 'settings' && <Settings data={data} />}
       </main>

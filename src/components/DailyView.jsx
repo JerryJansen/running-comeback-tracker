@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { today, yesterday, formatDateFull, getCurrentWeek, getStreakCount, painColor } from '../utils/helpers';
+import { getTodaySuggestion, RUNNING_PLAN, PHASE_NAMES, PAIN_RULES, WARMUP, COOLDOWN } from '../utils/pfpsProgram';
 import RunLogger from './RunLogger';
 import RehabLogger from './RehabLogger';
 import PainTracker from './PainTracker';
@@ -78,6 +79,11 @@ export default function DailyView({ data }) {
   // Weekly plan info
   const weekPlan = currentWeek && data.weeklyPlan?.[currentWeek - 1];
 
+  // PFPS daily suggestion
+  const suggestion = useMemo(() => {
+    return getTodaySuggestion(currentWeek, new Date().getDay());
+  }, [currentWeek]);
+
   const openEditor = (type, item) => {
     setEditItem(item);
     setActiveLogger(type);
@@ -144,11 +150,56 @@ export default function DailyView({ data }) {
         <div className="streak-label">day streak</div>
       </div>
 
+      {/* PFPS Daily Suggestion */}
+      {suggestion && (
+        <div className="card suggestion-card">
+          <div className="suggestion-header">
+            <span className="suggestion-phase">{suggestion.phaseName}</span>
+            <span className={`suggestion-type suggestion-type--${suggestion.activity}`}>
+              {suggestion.activity === 'run' ? '🏃 Run Day' : suggestion.activity === 'rehab' ? '💪 Rehab Day' : '😴 Rest Day'}
+            </span>
+          </div>
+          <p className="suggestion-description">{suggestion.description}</p>
+
+          {suggestion.activity === 'run' && suggestion.runPlan && (
+            <div className="suggestion-detail">
+              <div className="suggestion-run-plan">
+                <strong>{suggestion.runPlan.runMin} min run / {suggestion.runPlan.walkMin} min walk × {suggestion.runPlan.intervals}</strong>
+                <span className="text-muted"> ({suggestion.runPlan.totalMin} min total, ~{suggestion.runPlan.approxKm} km)</span>
+              </div>
+              <p className="text-muted suggestion-note">{suggestion.runPlan.notes}</p>
+              <div className="suggestion-reminder">
+                Pain must stay ≤ 2/10 during running. Stop if it rises above.
+              </div>
+            </div>
+          )}
+
+          {suggestion.activity === 'rehab' && (
+            <div className="suggestion-detail">
+              <p className="text-muted">{suggestion.exercises?.length || 0} exercises in today's program</p>
+              <p className="text-muted suggestion-note">{suggestion.phaseGoal}</p>
+              <div className="suggestion-reminder">
+                Pain must stay ≤ 4/10 during exercises. Ideally below 2/10.
+              </div>
+            </div>
+          )}
+
+          {suggestion.activity === 'rest' && (
+            <div className="suggestion-detail">
+              <p className="text-muted">Recovery is training. Your body rebuilds stronger on rest days.</p>
+              <div className="suggestion-reminder">
+                Optional: gentle stretching, foam rolling, or a short walk.
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {weekPlan && weekPlan.targetKm > 0 && (
         <div className="plan-summary">
-          <h3>This Week's Plan</h3>
+          <h3>Week {currentWeek} Target</h3>
           <div className="plan-row">
-            <span>Target: {weekPlan.targetKm} km</span>
+            <span>~{weekPlan.targetKm} km</span>
             <span>{weekPlan.numRuns} runs</span>
             {weekPlan.runTypes && <span>{weekPlan.runTypes}</span>}
           </div>

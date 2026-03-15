@@ -801,6 +801,290 @@ input[type="range"]::-webkit-slider-thumb {
   flex-wrap: wrap;
 }
 
+/* ─── PFPS Suggestion Card ─── */
+.suggestion-card {
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  background: rgba(34, 211, 238, 0.04);
+}
+
+.suggestion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.suggestion-phase {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.suggestion-type {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.suggestion-type--run { background: rgba(34, 211, 238, 0.15); color: var(--cyan); }
+.suggestion-type--rehab { background: rgba(16, 185, 129, 0.15); color: var(--green); }
+.suggestion-type--rest { background: rgba(148, 163, 184, 0.15); color: var(--text-muted); }
+
+.suggestion-description { font-size: 14px; margin-bottom: 8px; }
+
+.suggestion-detail { font-size: 13px; }
+
+.suggestion-run-plan { margin-bottom: 4px; }
+
+.suggestion-note { font-size: 12px; margin-top: 4px; }
+
+.suggestion-reminder {
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: rgba(245, 158, 11, 0.1);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--amber);
+}
+
+.suggestion-run-banner {
+  border-left: 3px solid var(--cyan);
+  font-size: 13px;
+}
+
+/* ─── Checklist Cards (Warm-up / Cool-down) ─── */
+.checklist-card {
+  border: 1px solid var(--border);
+}
+
+.checklist-card--done {
+  border-color: var(--green);
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.checklist-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.checklist-items {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.checklist-item {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.checklist-item:last-of-type { border-bottom: none; }
+
+.checklist-name { flex: 1; }
+
+/* ─── PFPS Quick Setup Card ─── */
+.pfps-setup-card {
+  border: 1px solid var(--cyan);
+  background: rgba(34, 211, 238, 0.06);
+}
+
+.pfps-features-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 12px;
+  font-size: 13px;
+}
+
+.pfps-features-list li {
+  padding: 3px 0;
+  color: var(--text-muted);
+}
+
+.pfps-features-list li::before {
+  content: "✓ ";
+  color: var(--green);
+}
+
+/* ─── PFPS Guide Page ─── */
+.pfps-guide { display: flex; flex-direction: column; gap: 12px; }
+
+.pfps-guide .disclaimer {
+  font-size: 11px;
+  font-style: italic;
+  opacity: 0.7;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.section-header h3 { margin: 0; }
+
+.section-content {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.section-content p { margin: 2px 0; }
+
+/* Traffic light */
+.traffic-light-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.traffic-light-row:last-child { border-bottom: none; }
+
+.traffic-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+.traffic-light-row p { margin: 2px 0 0; font-size: 12px; color: var(--text-muted); }
+
+.rule-list {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.rule-list h4 { margin-bottom: 6px; }
+.rule-list p { font-size: 12px; margin: 4px 0; }
+
+/* Running plan table */
+.running-plan-table {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.running-plan-row {
+  display: flex;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.running-plan-row:last-child { border-bottom: none; }
+
+.running-plan-week {
+  font-weight: 700;
+  color: var(--cyan);
+  min-width: 40px;
+}
+
+.running-plan-detail { flex: 1; }
+
+/* Exercise preview */
+.exercise-preview { margin-top: 12px; }
+
+.exercise-category {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.exercise-category h5 {
+  color: var(--cyan);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.exercise-preview-item {
+  padding: 4px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.exercise-preview-name { font-size: 13px; flex: 1; }
+.exercise-preview-sets { font-size: 12px; color: var(--text-muted); }
+
+/* Protocol items (warm-up/cool-down in guide) */
+.protocol-item {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.protocol-item:last-of-type { border-bottom: none; }
+
+/* Surface rows */
+.surface-row {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.surface-row:last-child { border-bottom: none; }
+
+.surface-rating { font-size: 11px; font-weight: 600; }
+.surface-rating--excellent { color: var(--green); }
+.surface-rating--good { color: var(--cyan); }
+.surface-rating--acceptable { color: var(--amber); }
+.surface-rating--avoid { color: var(--red); }
+.surface-rating--avoid-until-wk-6\+ { color: var(--red); }
+
+/* Equipment */
+.equipment-item {
+  padding: 3px 0;
+  font-size: 13px;
+}
+
+/* Tip cards */
+.tip-card {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.tip-card:last-child { border-bottom: none; }
+
+.tip-title {
+  font-weight: 600;
+  font-size: 14px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.tip-content {
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 /* Desktop overrides */
 @media (min-width: 768px) {
   .app { max-width: 480px; border-left: 1px solid var(--border); border-right: 1px solid var(--border); }

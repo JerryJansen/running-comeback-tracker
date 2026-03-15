@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { exportAllData, importAllData } from '../utils/db';
+import { WEEKLY_EXERCISES, RUNNING_PLAN, EQUIPMENT, PHASE_NAMES } from '../utils/pfpsProgram';
 
 export default function Settings({ data }) {
   const [programStart, setProgramStart] = useState(data.programStart || '');
@@ -74,6 +75,33 @@ export default function Settings({ data }) {
     setWeekOverrideOpen(null);
   };
 
+  const loadPfpsProgram = async () => {
+    if (!confirm('This will load the full evidence-based PFPS rehab program into all 8 weeks, and set the running plan targets. Continue?')) return;
+
+    // Set default exercises to Phase 1
+    const phase1 = WEEKLY_EXERCISES[1].map((e) => ({ name: e.name, sets: e.sets, reps: e.reps }));
+    setExercises(phase1);
+    await data.saveExercises(phase1);
+
+    // Set per-week exercise overrides for all 8 weeks
+    for (let w = 1; w <= 8; w++) {
+      const weekEx = WEEKLY_EXERCISES[w].map((e) => ({ name: e.name, sets: e.sets, reps: e.reps }));
+      await data.saveWeekExercises(w, weekEx);
+    }
+
+    // Set the running plan targets
+    const plan = RUNNING_PLAN.map((w) => ({
+      targetKm: w.approxKm,
+      numRuns: w.sessions,
+      runTypes: `${w.runMin}min run / ${w.walkMin}min walk × ${w.intervals}`,
+      rehabFrequency: w.week <= 4 ? 5 : 4,
+    }));
+    await data.saveWeeklyPlan(plan);
+
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  };
+
   const handleExport = async () => {
     const allData = await exportAllData();
     const blob = new Blob([JSON.stringify(allData, null, 2)], { type: 'application/json' });
@@ -116,6 +144,22 @@ export default function Settings({ data }) {
   return (
     <div className="settings">
       <h2>Settings</h2>
+
+      <div className="card pfps-setup-card">
+        <h3>Quick Setup: PFPS Program</h3>
+        <p className="text-muted">
+          Load a complete evidence-based 8-week patellofemoral pain rehab program with progressive exercises and return-to-running plan.
+        </p>
+        <ul className="pfps-features-list">
+          <li>4 phases of progressive rehab exercises (11-12 exercises per phase)</li>
+          <li>Week-by-week return-to-running with walk/run intervals</li>
+          <li>Hip, quad, hamstring, calf & balance work</li>
+          <li>Equipment: resistance bands, foam roller, step, chair</li>
+        </ul>
+        <button className="btn btn--primary btn--full" onClick={loadPfpsProgram}>
+          Load PFPS Rehab Program
+        </button>
+      </div>
 
       <div className="card">
         <h3>Program Start Date</h3>

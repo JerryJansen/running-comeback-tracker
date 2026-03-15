@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { today, generateId, calculatePace, painColor } from '../utils/helpers';
+import { today, generateId, calculatePace, painColor, getCurrentWeek } from '../utils/helpers';
+import { WARMUP, COOLDOWN, RUNNING_PLAN, CADENCE_ADVICE, SURFACES as SURFACE_RECS } from '../utils/pfpsProgram';
 
 const DISTANCES = [2, 3, 4, 5, 6, 7, 8, 9, 10];
 const RUN_TYPES = ['easy', 'intervals', 'walk-run', 'tempo'];
@@ -7,20 +8,27 @@ const SURFACES = ['treadmill', 'road', 'trail', 'track'];
 
 export default function RunLogger({ data, onBack, editRun }) {
   const isEdit = !!editRun;
+  const currentWeek = getCurrentWeek(data.programStart);
+  const runPlan = currentWeek ? RUNNING_PLAN[currentWeek - 1] : null;
+  const [showWarmup, setShowWarmup] = useState(false);
+  const [showCooldown, setShowCooldown] = useState(false);
+  const [warmupDone, setWarmupDone] = useState(false);
+  const [cooldownDone, setCooldownDone] = useState(false);
+
   const [form, setForm] = useState(editRun || {
     distance: '',
     duration: '',
-    type: 'easy',
+    type: runPlan ? 'walk-run' : 'easy',
     surface: 'road',
     painDuring: 0,
     painAfter: 0,
     painNextMorning: null,
+    cadence: '',
     notes: '',
     date: today(),
-    // Walk-run interval fields
-    walkRunMin: 1,
-    walkRunWalkMin: 2,
-    walkRunRepeats: 5,
+    walkRunMin: runPlan?.runMin || 1,
+    walkRunWalkMin: runPlan?.walkMin || 2,
+    walkRunRepeats: runPlan?.intervals || 5,
   });
 
   const pace = calculatePace(parseFloat(form.distance), parseFloat(form.duration));
@@ -32,6 +40,7 @@ export default function RunLogger({ data, onBack, editRun }) {
       id: editRun?.id || generateId(),
       distance: parseFloat(form.distance),
       duration: parseFloat(form.duration),
+      cadence: form.cadence ? parseInt(form.cadence) : null,
       pace,
     };
     await data.saveRun(run);
@@ -46,6 +55,37 @@ export default function RunLogger({ data, onBack, editRun }) {
         <button className="btn btn--ghost" onClick={onBack}>← Back</button>
         <h2>{isEdit ? 'Edit Run' : 'Log Run'}</h2>
       </div>
+
+      {/* Suggested run plan for this week */}
+      {runPlan && !isEdit && (
+        <div className="card suggestion-run-banner">
+          <strong>Week {currentWeek} plan:</strong> {runPlan.runMin} min run / {runPlan.walkMin} min walk × {runPlan.intervals} (~{runPlan.approxKm} km)
+          <div className="text-muted" style={{ fontSize: 12, marginTop: 4 }}>{runPlan.notes}</div>
+        </div>
+      )}
+
+      {/* Warm-up checklist */}
+      {!isEdit && (
+        <div className={`card checklist-card ${warmupDone ? 'checklist-card--done' : ''}`}>
+          <div className="checklist-header" onClick={() => setShowWarmup(!showWarmup)}>
+            <span>{warmupDone ? '✓' : '○'} Warm-up (7-10 min)</span>
+            <span className="text-muted">{showWarmup ? '▲' : '▼'}</span>
+          </div>
+          {showWarmup && (
+            <div className="checklist-items">
+              {WARMUP.map((item, i) => (
+                <div key={i} className="checklist-item">
+                  <span className="checklist-name">{item.name}</span>
+                  <span className="text-muted">{item.duration || item.reps}</span>
+                </div>
+              ))}
+              <button className={`btn btn--sm ${warmupDone ? 'btn--ghost' : 'btn--secondary'}`} onClick={() => setWarmupDone(!warmupDone)}>
+                {warmupDone ? 'Undo' : 'Done with warm-up'}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="form-group">
         <label>Date</label>
@@ -85,6 +125,21 @@ export default function RunLogger({ data, onBack, editRun }) {
           min="0"
         />
         {pace && <div className="pace-display">Pace: {pace}</div>}
+      </div>
+
+      <div className="form-group">
+        <label>Cadence (steps/min)</label>
+        <input
+          type="number"
+          placeholder="e.g. 170"
+          value={form.cadence || ''}
+          onChange={(e) => update('cadence', e.target.value)}
+          min="100"
+          max="220"
+        />
+        <div className="text-muted" style={{ fontSize: 12 }}>
+          Tip: {CADENCE_ADVICE.instruction} {CADENCE_ADVICE.reason}
+        </div>
       </div>
 
       <div className="form-group">
@@ -212,6 +267,39 @@ export default function RunLogger({ data, onBack, editRun }) {
         />
         <div className="slider-labels"><span>0</span><span>5</span><span>10</span></div>
       </div>
+
+      {/* Cool-down checklist */}
+      {!isEdit && (
+        <div className={`card checklist-card ${cooldownDone ? 'checklist-card--done' : ''}`}>
+          <div className="checklist-header" onClick={() => setShowCooldown(!showCooldown)}>
+            <span>{cooldownDone ? '✓' : '○'} Cool-down (8-12 min)</span>
+            <span className="text-muted">{showCooldown ? '▲' : '▼'}</span>
+          </div>
+          {showCooldown && (
+            <div className="checklist-items">
+              {COOLDOWN.map((item, i) => (
+                <div key={i} className="checklist-item">
+                  <span className="checklist-name">{item.name}</span>
+                  <span className="text-muted">{item.hold || item.duration}</span>
+                  {item.detail && <div className="text-muted" style={{ fontSize: 11 }}>{item.detail}</div>}
+                </div>
+              ))}
+              <button className={`btn btn--sm ${cooldownDone ? 'btn--ghost' : 'btn--secondary'}`} onClick={() => setCooldownDone(!cooldownDone)}>
+                {cooldownDone ? 'Undo' : 'Done with cool-down'}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Pain context for PFPS */}
+      {form.painDuring >= 3 && (
+        <div className="alert alert--warning" style={{ fontSize: 13 }}>
+          {form.painDuring >= 5
+            ? '🔴 Pain ≥ 5/10 during run. You should have stopped. Consider dropping back a week in the program.'
+            : '🟡 Pain 3-4/10 during run. Modify next session: reduce distance or add more walk breaks. Do not progress this week.'}
+        </div>
+      )}
 
       <div className="form-group">
         <label>Notes</label>
