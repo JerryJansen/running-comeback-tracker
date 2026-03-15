@@ -11,6 +11,8 @@ export default function Settings({ data }) {
   const [importStatus, setImportStatus] = useState('');
   const [weekOverrideOpen, setWeekOverrideOpen] = useState(null);
   const [weekExForm, setWeekExForm] = useState({});
+  const [showPfpsSetup, setShowPfpsSetup] = useState(false);
+  const [pfpsStartWeek, setPfpsStartWeek] = useState(1);
 
   const addExercise = () => {
     setExercises((prev) => [...prev, { name: '', sets: 3, reps: 10 }]);
@@ -75,13 +77,12 @@ export default function Settings({ data }) {
     setWeekOverrideOpen(null);
   };
 
-  const loadPfpsProgram = async () => {
-    if (!confirm('This will load the full evidence-based PFPS rehab program into all 8 weeks, and set the running plan targets. Continue?')) return;
-
-    // Set default exercises to Phase 1
-    const phase1 = WEEKLY_EXERCISES[1].map((e) => ({ name: e.name, sets: e.sets, reps: e.reps }));
-    setExercises(phase1);
-    await data.saveExercises(phase1);
+  const loadPfpsProgram = async (startingWeek) => {
+    // Set default exercises to the starting phase
+    const phaseExercises = WEEKLY_EXERCISES[startingWeek];
+    const defaultEx = phaseExercises.map((e) => ({ name: e.name, sets: e.sets, reps: e.reps }));
+    setExercises(defaultEx);
+    await data.saveExercises(defaultEx);
 
     // Set per-week exercise overrides for all 8 weeks
     for (let w = 1; w <= 8; w++) {
@@ -98,6 +99,16 @@ export default function Settings({ data }) {
     }));
     await data.saveWeeklyPlan(plan);
 
+    // Save the starting week setting
+    await data.saveStartingWeek(startingWeek);
+
+    // Set programStart to today — the sliding schedule uses startingWeek
+    // to determine which phase to start with, no need to backdate
+    const startStr = new Date().toISOString().slice(0, 10);
+    setProgramStart(startStr);
+    await data.saveProgramStart(startStr);
+
+    setShowPfpsSetup(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
@@ -156,9 +167,42 @@ export default function Settings({ data }) {
           <li>Hip, quad, hamstring, calf & balance work</li>
           <li>Equipment: resistance bands, foam roller, step, chair</li>
         </ul>
-        <button className="btn btn--primary btn--full" onClick={loadPfpsProgram}>
-          Load PFPS Rehab Program
-        </button>
+
+        {!showPfpsSetup ? (
+          <button className="btn btn--primary btn--full" onClick={() => setShowPfpsSetup(true)}>
+            Load PFPS Rehab Program
+          </button>
+        ) : (
+          <div className="pfps-week-selector">
+            <h4>Where are you in the program?</h4>
+            <p className="text-muted">Select the week you're currently in. The program dates will be calculated automatically.</p>
+            <div className="week-selector-grid">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((w) => (
+                <button
+                  key={w}
+                  className={`chip chip--large ${pfpsStartWeek === w ? 'chip--active' : ''}`}
+                  onClick={() => setPfpsStartWeek(w)}
+                >
+                  <div>Week {w}</div>
+                  <div className="chip-sub">{PHASE_NAMES[w]}</div>
+                </button>
+              ))}
+            </div>
+            {pfpsStartWeek > 1 && (
+              <p className="text-muted" style={{ fontSize: 12, marginTop: 8 }}>
+                Starting at week {pfpsStartWeek} — your program start date will be set to {pfpsStartWeek - 1} week{pfpsStartWeek > 2 ? 's' : ''} ago.
+              </p>
+            )}
+            <div className="pfps-setup-actions">
+              <button className="btn btn--primary" onClick={() => loadPfpsProgram(pfpsStartWeek)}>
+                Start from Week {pfpsStartWeek}
+              </button>
+              <button className="btn btn--ghost" onClick={() => setShowPfpsSetup(false)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="card">

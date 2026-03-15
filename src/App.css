@@ -1085,6 +1085,124 @@ input[type="range"]::-webkit-slider-thumb {
   line-height: 1.5;
 }
 
+/* ─── PFPS Week Selector ─── */
+.pfps-week-selector {
+  margin-top: 12px;
+}
+
+.pfps-week-selector h4 { margin-bottom: 4px; }
+
+.week-selector-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.chip--large {
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.chip-sub {
+  font-size: 10px;
+  opacity: 0.7;
+  font-weight: 400;
+  margin-top: 2px;
+}
+
+.pfps-setup-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* ─── Rescheduled suggestion ─── */
+.suggestion-card--rescheduled {
+  border-color: var(--amber);
+  background: rgba(245, 158, 11, 0.06);
+}
+
+.rescheduled-badge {
+  font-size: 12px;
+  padding: 4px 8px;
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--amber);
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+
+.extra-activities {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ─── Week Schedule Overview ─── */
+.week-schedule-card {
+  padding: 12px;
+}
+
+.week-schedule-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.week-schedule-header h4 { margin: 0; font-size: 14px; }
+
+.week-schedule-dots {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  text-align: center;
+}
+
+.schedule-dot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 2px;
+  border-radius: 6px;
+  position: relative;
+}
+
+.schedule-dot-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.schedule-dot-icon {
+  font-size: 14px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--bg-input);
+}
+
+.schedule-dot-icon--run { background: rgba(34, 211, 238, 0.15); }
+.schedule-dot-icon--rehab { background: rgba(16, 185, 129, 0.15); }
+.schedule-dot-icon--rest { background: var(--bg-input); }
+
+.schedule-dot--done .schedule-dot-icon { background: var(--green); color: white; }
+.schedule-dot--missed .schedule-dot-icon { background: var(--red); color: white; }
+.schedule-dot--today .schedule-dot-icon { box-shadow: 0 0 0 2px var(--cyan); }
+.schedule-dot--rescheduled .schedule-dot-icon { box-shadow: 0 0 0 2px var(--amber); }
+
+.schedule-dot-resched {
+  font-size: 8px;
+  color: var(--amber);
+  position: absolute;
+  bottom: -2px;
+}
+
 /* Desktop overrides */
 @media (min-width: 768px) {
   .app { max-width: 480px; border-left: 1px solid var(--border); border-right: 1px solid var(--border); }

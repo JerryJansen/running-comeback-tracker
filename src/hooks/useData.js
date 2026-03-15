@@ -10,10 +10,11 @@ export function useData() {
   const [exercises, setExercises] = useState([]);
   const [weekExercises, setWeekExercises] = useState({});
   const [weeklyPlan, setWeeklyPlan] = useState([]);
+  const [startingWeek, setStartingWeek] = useState(1);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    const [r, rh, p, rd, ps, ex, wex, wp] = await Promise.all([
+    const [r, rh, p, rd, ps, ex, wex, wp, sw] = await Promise.all([
       db.getAll('runs'),
       db.getAll('rehab'),
       db.getAll('pain'),
@@ -22,6 +23,7 @@ export function useData() {
       db.getSetting('exercises'),
       db.getSetting('weekExercises'),
       db.getSetting('weeklyPlan'),
+      db.getSetting('startingWeek'),
     ]);
     setRuns(r);
     setRehab(rh);
@@ -31,6 +33,7 @@ export function useData() {
     setExercises(ex || []);
     setWeekExercises(wex || {});
     setWeeklyPlan(wp || defaultWeeklyPlan());
+    setStartingWeek(sw || 1);
     setLoading(false);
   }, []);
 
@@ -95,6 +98,11 @@ export function useData() {
     setRestDays(updated);
   };
 
+  const saveStartingWeek = async (week) => {
+    await db.setSetting('startingWeek', week);
+    setStartingWeek(week);
+  };
+
   const saveWeekExercises = async (weekNum, exerciseList) => {
     const updated = { ...weekExercises, [weekNum]: exerciseList };
     await db.setSetting('weekExercises', updated);
@@ -109,9 +117,9 @@ export function useData() {
   };
 
   return {
-    runs, rehab, pain, restDays, programStart, exercises, weekExercises, weeklyPlan, loading,
+    runs, rehab, pain, restDays, programStart, exercises, weekExercises, weeklyPlan, startingWeek, loading,
     saveRun, deleteRun, saveRehab, deleteRehab, savePain, deletePain,
-    saveProgramStart, saveExercises, saveWeeklyPlan, saveRestDay, removeRestDay,
+    saveProgramStart, saveExercises, saveWeeklyPlan, saveStartingWeek, saveRestDay, removeRestDay,
     saveWeekExercises, getExercisesForWeek, refresh,
   };
 }

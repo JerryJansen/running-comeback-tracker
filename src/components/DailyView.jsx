@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { today, yesterday, formatDateFull, getCurrentWeek, getStreakCount, painColor } from '../utils/helpers';
 import { getTodaySuggestion, RUNNING_PLAN, PHASE_NAMES, PAIN_RULES, WARMUP, COOLDOWN } from '../utils/pfpsProgram';
+import { getWeekSchedule } from '../utils/scheduleTracker';
 import RunLogger from './RunLogger';
 import RehabLogger from './RehabLogger';
 import PainTracker from './PainTracker';
@@ -10,7 +11,7 @@ export default function DailyView({ data }) {
   const [editItem, setEditItem] = useState(null);
   const todayStr = today();
   const yesterdayStr = yesterday();
-  const currentWeek = getCurrentWeek(data.programStart);
+  const currentWeek = getCurrentWeek(data.programStart, data.startingWeek || 1);
 
   const todayRuns = useMemo(() => data.runs.filter((r) => r.date === todayStr), [data.runs, todayStr]);
   const todayRehab = useMemo(() => data.rehab.filter((r) => r.date === todayStr), [data.rehab, todayStr]);
@@ -76,13 +77,26 @@ export default function DailyView({ data }) {
     return messages;
   }, [data.pain, data.runs]);
 
-  // Weekly plan info
-  const weekPlan = currentWeek && data.weeklyPlan?.[currentWeek - 1];
+  // Dynamic schedule with sliding rescheduling
+  const weekSchedule = useMemo(() => {
+    return getWeekSchedule(data.programStart, currentWeek, data.runs, data.rehab, data.restDays, data.startingWeek || 1);
+  }, [data.programStart, currentWeek, data.runs, data.rehab, data.restDays, data.startingWeek]);
 
-  // PFPS daily suggestion
+  // Effective week accounts for sliding: if you missed days, you're still on an earlier program week
+  const effectiveWeek = weekSchedule?.effectiveWeek || currentWeek;
+
+  // PFPS daily suggestion — use effective week from sliding schedule
   const suggestion = useMemo(() => {
-    return getTodaySuggestion(currentWeek, new Date().getDay());
-  }, [currentWeek]);
+    return getTodaySuggestion(effectiveWeek, new Date().getDay());
+  }, [effectiveWeek]);
+
+  // Weekly plan info — use effective week so targets match the shifted schedule
+  const weekPlan = effectiveWeek && data.weeklyPlan?.[effectiveWeek - 1];
+
+  // Use rescheduled plan for today if available, otherwise fall back to static suggestion
+  const todayPlan = weekSchedule?.todayPlan || null;
+  const effectiveActivity = todayPlan?.planned || suggestion?.activity || null;
+  const isRescheduled = todayPlan?.isRescheduled || false;
 
   const openEditor = (type, item) => {
     setEditItem(item);
@@ -121,7 +135,14 @@ export default function DailyView({ data }) {
       <div className="date-header">
         <h1>{formatDateFull(todayStr)}</h1>
         {currentWeek ? (
-          <div className="week-badge">Week {currentWeek} of 8</div>
+          <div className="week-badge">
+            Week {weekSchedule?.effectiveWeek || currentWeek} of 8
+            {weekSchedule?.daysShifted > 0 && (
+              <span className="text-muted" style={{ fontSize: 11, marginLeft: 6 }}>
+                ({weekSchedule.daysShifted}d shifted)
+              </span>
+            )}
+          </div>
         ) : (
           <div className="week-badge week-badge--setup">Set program start date in Settings</div>
         )}
@@ -150,18 +171,41 @@ export default function DailyView({ data }) {
         <div className="streak-label">day streak</div>
       </div>
 
-      {/* PFPS Daily Suggestion */}
-      {suggestion && (
-        <div className="card suggestion-card">
+      {/* PFPS Daily Suggestion — uses rescheduled plan if available */}
+      {(suggestion || todayPlan) && (
+        <div className={`card suggestion-card ${isRescheduled ? 'suggestion-card--rescheduled' : ''}`}>
           <div className="suggestion-header">
-            <span className="suggestion-phase">{suggestion.phaseName}</span>
-            <span className={`suggestion-type suggestion-type--${suggestion.activity}`}>
-              {suggestion.activity === 'run' ? '🏃 Run Day' : suggestion.activity === 'rehab' ? '💪 Rehab Day' : '😴 Rest Day'}
+            <span className="suggestion-phase">{suggestion?.phaseName || `Week ${currentWeek}`}</span>
+            <span className={`suggestion-type suggestion-type--${effectiveActivity}`}>
+              {effectiveActivity === 'run' ? '🏃 Run Day' : effectiveActivity === 'rehab' ? '💪 Rehab Day' : '😴 Rest Day'}
             </span>
           </div>
-          <p className="suggestion-description">{suggestion.description}</p>
 
-          {suggestion.activity === 'run' && suggestion.runPlan && (
+          {isRescheduled && (
+            <div className="rescheduled-badge">
+              Rescheduled — {todayPlan.description}
+            </div>
+          )}
+
+          {!isRescheduled && todayPlan && (
+            <p className="suggestion-description">{todayPlan.description}</p>
+          )}
+          {!todayPlan && suggestion && (
+            <p className="suggestion-description">{suggestion.description}</p>
+          )}
+
+          {todayPlan?.extraActivities?.length > 0 && (
+            <div className="extra-activities">
+              <div className="text-muted" style={{ fontSize: 12, marginBottom: 4 }}>Also rescheduled for today:</div>
+              {todayPlan.extraActivities.map((ea, i) => (
+                <div key={i} className="rescheduled-badge">
+                  {ea.type === 'run' ? '🏃' : '💪'} {ea.description}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {effectiveActivity === 'run' && suggestion?.runPlan && (
             <div className="suggestion-detail">
               <div className="suggestion-run-plan">
                 <strong>{suggestion.runPlan.runMin} min run / {suggestion.runPlan.walkMin} min walk × {suggestion.runPlan.intervals}</strong>
@@ -174,17 +218,17 @@ export default function DailyView({ data }) {
             </div>
           )}
 
-          {suggestion.activity === 'rehab' && (
+          {effectiveActivity === 'rehab' && (
             <div className="suggestion-detail">
-              <p className="text-muted">{suggestion.exercises?.length || 0} exercises in today's program</p>
-              <p className="text-muted suggestion-note">{suggestion.phaseGoal}</p>
+              <p className="text-muted">{suggestion?.exercises?.length || 0} exercises in today's program</p>
+              <p className="text-muted suggestion-note">{suggestion?.phaseGoal || ''}</p>
               <div className="suggestion-reminder">
                 Pain must stay ≤ 4/10 during exercises. Ideally below 2/10.
               </div>
             </div>
           )}
 
-          {suggestion.activity === 'rest' && (
+          {effectiveActivity === 'rest' && !isRescheduled && (
             <div className="suggestion-detail">
               <p className="text-muted">Recovery is training. Your body rebuilds stronger on rest days.</p>
               <div className="suggestion-reminder">
@@ -195,9 +239,37 @@ export default function DailyView({ data }) {
         </div>
       )}
 
+      {/* Week schedule overview */}
+      {weekSchedule && (
+        <div className="card week-schedule-card">
+          <div className="week-schedule-header">
+            <h4>This Week</h4>
+            <span className="text-muted">{weekSchedule.completedCount}/{weekSchedule.totalPlanned} done</span>
+          </div>
+          <div className="week-schedule-dots">
+            {weekSchedule.schedule.map((day, i) => (
+              <div key={i} className={`schedule-dot schedule-dot--${day.status} ${day.isRescheduled ? 'schedule-dot--rescheduled' : ''}`}
+                title={`${day.dayName}: ${day.planned}${day.isRescheduled ? ' (rescheduled)' : ''}`}
+              >
+                <div className="schedule-dot-label">{day.dayName.slice(0, 2)}</div>
+                <div className={`schedule-dot-icon schedule-dot-icon--${day.planned}`}>
+                  {day.status === 'done' ? '✓' : day.status === 'missed' ? '✗' : day.planned === 'run' ? '🏃' : day.planned === 'rehab' ? '💪' : '·'}
+                </div>
+                {day.isRescheduled && <div className="schedule-dot-resched">↑</div>}
+              </div>
+            ))}
+          </div>
+          {weekSchedule.daysShifted > 0 && (
+            <div className="text-muted" style={{ fontSize: 11, marginTop: 6 }}>
+              Program shifted {weekSchedule.daysShifted} day{weekSchedule.daysShifted > 1 ? 's' : ''} forward due to missed sessions
+            </div>
+          )}
+        </div>
+      )}
+
       {weekPlan && weekPlan.targetKm > 0 && (
         <div className="plan-summary">
-          <h3>Week {currentWeek} Target</h3>
+          <h3>Week {effectiveWeek} Target</h3>
           <div className="plan-row">
             <span>~{weekPlan.targetKm} km</span>
             <span>{weekPlan.numRuns} runs</span>

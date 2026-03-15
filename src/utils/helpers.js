@@ -42,12 +42,14 @@ export function painLabel(level) {
   return 'High';
 }
 
-export function getCurrentWeek(programStartDate) {
+export function getCurrentWeek(programStartDate, startingWeek = 1) {
   if (!programStartDate) return null;
   const start = parseISO(programStartDate);
   const diff = differenceInCalendarDays(new Date(), start);
   if (diff < 0) return 0;
-  const week = Math.floor(diff / 7) + 1;
+  const calendarWeek = Math.floor(diff / 7) + 1;
+  // Offset by starting week: calendar week 1 = startingWeek
+  const week = calendarWeek + (startingWeek - 1);
   return Math.min(week, 8);
 }
 
