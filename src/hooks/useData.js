@@ -1,0 +1,95 @@
+import { useState, useEffect, useCallback } from 'react';
+import * as db from '../utils/db';
+
+export function useData() {
+  const [runs, setRuns] = useState([]);
+  const [rehab, setRehab] = useState([]);
+  const [pain, setPain] = useState([]);
+  const [programStart, setProgramStart] = useState(null);
+  const [exercises, setExercises] = useState([]);
+  const [weeklyPlan, setWeeklyPlan] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    const [r, rh, p, ps, ex, wp] = await Promise.all([
+      db.getAll('runs'),
+      db.getAll('rehab'),
+      db.getAll('pain'),
+      db.getSetting('programStart'),
+      db.getSetting('exercises'),
+      db.getSetting('weeklyPlan'),
+    ]);
+    setRuns(r);
+    setRehab(rh);
+    setPain(p);
+    setProgramStart(ps || null);
+    setExercises(ex || []);
+    setWeeklyPlan(wp || defaultWeeklyPlan());
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  const saveRun = async (run) => {
+    await db.put('runs', run);
+    await refresh();
+  };
+
+  const deleteRun = async (id) => {
+    await db.del('runs', id);
+    await refresh();
+  };
+
+  const saveRehab = async (session) => {
+    await db.put('rehab', session);
+    await refresh();
+  };
+
+  const deleteRehab = async (id) => {
+    await db.del('rehab', id);
+    await refresh();
+  };
+
+  const savePain = async (entry) => {
+    await db.put('pain', entry);
+    await refresh();
+  };
+
+  const deletePain = async (id) => {
+    await db.del('pain', id);
+    await refresh();
+  };
+
+  const saveProgramStart = async (date) => {
+    await db.setSetting('programStart', date);
+    setProgramStart(date);
+  };
+
+  const saveExercises = async (list) => {
+    await db.setSetting('exercises', list);
+    setExercises(list);
+  };
+
+  const saveWeeklyPlan = async (plan) => {
+    await db.setSetting('weeklyPlan', plan);
+    setWeeklyPlan(plan);
+  };
+
+  return {
+    runs, rehab, pain, programStart, exercises, weeklyPlan, loading,
+    saveRun, deleteRun, saveRehab, deleteRehab, savePain, deletePain,
+    saveProgramStart, saveExercises, saveWeeklyPlan, refresh,
+  };
+}
+
+function defaultWeeklyPlan() {
+  return Array.from({ length: 8 }, (_, i) => ({
+    week: i + 1,
+    targetKm: 0,
+    numRuns: 0,
+    runTypes: '',
+    rehabFrequency: '',
+  }));
+}
